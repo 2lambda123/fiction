@@ -285,20 +285,20 @@ TEMPLATE_TEST_CASE(
 
         charge_distribution_surface charge_layout{lyt, sidb_simulation_parameters{}};
 
-        CHECK_THAT(charge_layout.get_distance_between_cells({0, 0, 0}, {0, 0, 0}),
+        CHECK_THAT(charge_layout.get_nm_distance_between_cells({0, 0, 0}, {0, 0, 0}),
                    Catch::Matchers::WithinAbs(0.0, 0.00001));
-        CHECK_THAT(charge_layout.get_distance_between_cells({0, 0, 0}, {1, 0, 0}),
-                   Catch::Matchers::WithinAbs(sidb_simulation_parameters{}.lat_a, 0.00001));
-        CHECK_THAT(charge_layout.get_distance_between_cells({1, 0, 0}, {0, 0, 0}),
-                   Catch::Matchers::WithinAbs(sidb_simulation_parameters{}.lat_a, 0.00001));
-        CHECK_THAT(charge_layout.get_distance_between_cells({1, 0, 0}, {1, 0, 0}),
+        CHECK_THAT(charge_layout.get_nm_distance_between_cells({0, 0, 0}, {1, 0, 0}),
+                   Catch::Matchers::WithinAbs(sidb_simulation_parameters{}.lat_a * 0.1, 0.00001));
+        CHECK_THAT(charge_layout.get_nm_distance_between_cells({1, 0, 0}, {0, 0, 0}),
+                   Catch::Matchers::WithinAbs(sidb_simulation_parameters{}.lat_a * 0.1, 0.00001));
+        CHECK_THAT(charge_layout.get_nm_distance_between_cells({1, 0, 0}, {1, 0, 0}),
                    Catch::Matchers::WithinAbs(0.0, 0.00001));
-        CHECK_THAT(charge_layout.get_distance_between_cells({0, 0, 0}, {1, 1, 1}),
+        CHECK_THAT(charge_layout.get_nm_distance_between_cells({0, 0, 0}, {1, 1, 1}),
                    Catch::Matchers::WithinAbs(
-                       std::hypot(sidb_simulation_parameters{}.lat_a,
-                                  sidb_simulation_parameters{}.lat_b + sidb_simulation_parameters{}.lat_c),
+                       std::hypot(sidb_simulation_parameters{}.lat_a * 0.1,
+                                  sidb_simulation_parameters{}.lat_b * 0.1 + sidb_simulation_parameters{}.lat_c * 0.1),
                        0.00001));
-        CHECK_THAT(charge_layout.get_distance_between_cells({1, 1, 1}, {1, 1, 1}),
+        CHECK_THAT(charge_layout.get_nm_distance_between_cells({1, 1, 1}, {1, 1, 1}),
                    Catch::Matchers::WithinAbs(0.0, 0.00001));
     }
 
@@ -488,7 +488,7 @@ TEMPLATE_TEST_CASE(
 
         CHECK_THAT(*charge_layout_new.get_local_potential({0, 0, 1}) + 0.5,
                    Catch::Matchers::WithinAbs(0, fiction::physical_constants::POP_STABILITY_ERR));
-        CHECK_THAT(*charge_layout_new.get_local_potential({1, 3, 1}), Catch::Matchers::WithinAbs(0.000000, 0.000001));
+        CHECK_THAT(*charge_layout_new.get_local_potential({1, 3, 0}), Catch::Matchers::WithinAbs(0.000000, 0.000001));
         CHECK_THAT(*charge_layout_new.get_local_potential({10, 5, 1}), Catch::Matchers::WithinAbs(0.000000, 0.000001));
         charge_layout_new.set_all_charge_states(sidb_charge_state::POSITIVE);
         charge_layout_new.update_after_charge_change();
@@ -753,7 +753,7 @@ TEMPLATE_TEST_CASE(
     SECTION("using chargeless and normal potential function")
     {
         TestType                         lyt_new{{11, 11}};
-        const sidb_simulation_parameters params{3, -0.32, 5.0 * 1E-9, 3.84 * 1E-10, 7.68 * 1E-10, 2.25 * 1E-10};
+        const sidb_simulation_parameters params{3, -0.32, 5.0, 3.84, 7.68, 2.25};
 
         lyt_new.assign_cell_type({0, 0, 1}, TestType::cell_type::NORMAL);
         lyt_new.assign_cell_type({1, 3, 0}, TestType::cell_type::NORMAL);
@@ -1033,9 +1033,12 @@ TEMPLATE_TEST_CASE(
         CHECK(loc_two_w_positive_defect > loc_two_w_neutral_defect);
         CHECK(loc_three_w_positive_defect > loc_three_w_neutral_defect);
 
-        CHECK(defect_potentials_negative[{0, 0, 0}] == -defect_potentials_positive[{0, 0, 0}]);
-        CHECK(defect_potentials_negative[{3, 0, 0}] == -defect_potentials_positive[{3, 0, 0}]);
-        CHECK(defect_potentials_negative[{5, 0, 0}] == -defect_potentials_positive[{5, 0, 0}]);
+        CHECK_THAT((defect_potentials_negative[{0, 0, 0}] + defect_potentials_positive[{0, 0, 0}]),
+                   Catch::Matchers::WithinAbs(0.0, 0.000001));
+        CHECK_THAT((defect_potentials_negative[{3, 0, 0}] + defect_potentials_positive[{3, 0, 0}]),
+                   Catch::Matchers::WithinAbs(0.0, 0.000001));
+        CHECK_THAT((defect_potentials_negative[{5, 0, 0}] + defect_potentials_positive[{5, 0, 0}]),
+                   Catch::Matchers::WithinAbs(0.0, 0.000001));
     }
 
     SECTION("experiments with defects | assigning and reassigning defects")
@@ -1094,9 +1097,12 @@ TEMPLATE_TEST_CASE(
         CHECK(loc_two_w_positive_defect > loc_two_w_neutral_defect);
         CHECK(loc_three_w_positive_defect > loc_three_w_neutral_defect);
 
-        CHECK(defect_potentials_negative[{0, 0, 0}] == -defect_potentials_positive[{0, 0, 0}]);
-        CHECK(defect_potentials_negative[{3, 0, 0}] == -defect_potentials_positive[{3, 0, 0}]);
-        CHECK(defect_potentials_negative[{5, 0, 0}] == -defect_potentials_positive[{5, 0, 0}]);
+        CHECK_THAT((defect_potentials_negative[{0, 0, 0}] + defect_potentials_positive[{0, 0, 0}]),
+                   Catch::Matchers::WithinAbs(0.0, 0.000001));
+        CHECK_THAT((defect_potentials_negative[{3, 0, 0}] + defect_potentials_positive[{3, 0, 0}]),
+                   Catch::Matchers::WithinAbs(0.0, 0.000001));
+        CHECK_THAT((defect_potentials_negative[{5, 0, 0}] + defect_potentials_positive[{5, 0, 0}]),
+                   Catch::Matchers::WithinAbs(0.0, 0.000001));
     }
 
     SECTION("assign defect on DB position which is not allowed")
@@ -1209,7 +1215,7 @@ TEMPLATE_TEST_CASE(
         const sidb_simulation_parameters params{3, -0.28};
         charge_distribution_surface      charge_lyt_first{lyt, params, sidb_charge_state::NEGATIVE};
         charge_lyt_first.three_state_sim_required();
-        const auto                       positive_candidates = charge_lyt_first.get_positive_candidates();
+        const auto positive_candidates = charge_lyt_first.get_positive_candidates();
         REQUIRE(positive_candidates.size() == 3);
         uint64_t loop_counter = 0;
         for (const auto& cell : positive_candidates)
@@ -1240,5 +1246,20 @@ TEMPLATE_TEST_CASE(
             }
         }
         CHECK(loop_counter == 1);
+    }
+
+    SECTION("detecting DBs which could be positively charged due to maximal band bending")
+    {
+
+        lyt.assign_cell_type({0, 0, 0}, TestType::cell_type::NORMAL);
+        lyt.assign_cell_type({4, 0, 0}, TestType::cell_type::NORMAL);
+        lyt.assign_cell_type({6, 0, 0}, TestType::cell_type::NORMAL);
+
+        const sidb_simulation_parameters params{3, -0.32};
+        charge_distribution_surface      charge_lyt_first{lyt, params, sidb_charge_state::NEGATIVE};
+        charge_lyt_first.assign_charge_state({0, 0, 0}, sidb_charge_state::NEGATIVE);
+        charge_lyt_first.assign_charge_state({4, 0, 0}, sidb_charge_state::NEUTRAL);
+        charge_lyt_first.assign_charge_state({6, 0, 0}, sidb_charge_state::NEGATIVE);
+        charge_lyt_first.update_after_charge_change();
     }
 }
