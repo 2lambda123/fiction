@@ -9,9 +9,9 @@
 
 #include <fmt/format.h>
 
-#include <algorithm>
+#include <iterator>
 #include <cstdint>
-#include <functional>
+#include <cstdint>
 #include <iostream>
 #include <type_traits>
 
